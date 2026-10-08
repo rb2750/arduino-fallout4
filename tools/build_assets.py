@@ -11,7 +11,7 @@ Then both outputs are decoded again and compared pixel for pixel with the origin
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import render_dat as r
-from split_art import split, bbox, ART_BOXES
+from split_art import split, bbox, repair, ART_BOXES
 from PIL import Image, ImageChops, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -171,10 +171,11 @@ def main():
         decode_layout(data, rebuilt)
         if picture: decode_art(picture, rebuilt)
         r.render([c for c in layout if live(name, c)], None, rebuilt)
+        # Compared with the design plus its deliberate repairs (the right boot, the torso bar).
         original = Image.new('RGB', (480, 320))
-        r.render(frame + commands, None, original)
+        r.render(frame + repair(name, commands), None, original)
         difference = ImageChops.difference(original, rebuilt).convert('L').point(lambda v: 255 if v else 0)
-        wrong = sum(1 for v in difference.getdata() if v)
+        wrong = sum(1 for v in difference.get_flattened_data() if v)
         worst = max(worst, wrong)
         rebuilt.save(os.path.join(check_dir, f'page{page:02d}.png'))
         print(f'page {page:2d} SCREEN{name}  layout {len(data):5d} B  art {len(picture) if picture else 0:5d} B  pixels different {wrong}')
